@@ -1,0 +1,251 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title></title>
+    <description>A small talks on IT</description>
+    <link>https://kenny.yeoyou.net/ko/</link>
+    <atom:link href="https://kenny.yeoyou.net/ko/feed.xml" rel="self" type="application/rss+xml"/>
+    <pubDate>Sun, 02 Aug 2020 07:50:27 +0000</pubDate>
+    <lastBuildDate>Sun, 02 Aug 2020 07:50:27 +0000</lastBuildDate>
+    <generator>Jekyll v4.1.1</generator>
+    
+      <item>
+        <title>무료 VPS,Oracle Cloud에 Algo VPN사용하기</title>
+        <description>&lt;p&gt;가끔 해외 VPN서버를 사용하면 좋을 때가 있지만 꼭 그걸위해 매달 비용을 지불해가며 쓰고 싶진 않기도 하죠.&lt;/p&gt;
+
+&lt;p&gt;하지만 가상서버가 해외에 이미 있다면 어떨까요? 요즘엔 공짜 서버도 좀 있는것 같군요.&lt;/p&gt;
+
+&lt;p&gt;이전 포스트에서 예고한 대로, Oracle Cloud에 Algo VPN서버를 설치해 봤습니다.&lt;/p&gt;
+
+&lt;p&gt;여러분에게 이 정보가 도움이 되길 바랍니다.&lt;/p&gt;
+
+&lt;h3 id=&quot;면책&quot;&gt;면책&lt;/h3&gt;
+
+&lt;p&gt;VPN사용에 관해선 각자의 책임하에 사용하시길 바랍니다.
+저는 Oracle Cloud나 VPN사용에 대해 어떠한 책임도 지지 않습니다.&lt;/p&gt;
+
+&lt;h3 id=&quot;인스턴스-생성&quot;&gt;인스턴스 생성&lt;/h3&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;이곳 &lt;a href=&quot;https://www.oracle.com/au/cloud/free/&quot; target=&quot;_blank&quot;&gt;Oracle Cloud&lt;/a&gt; 에서 계정을 생성합니다.
+    &lt;ul&gt;
+      &lt;li&gt;홈 리전은 VPN 사용을 원하는 곳으로 설정 합니다.&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;웹 콘솔에 접속하여 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Create a VM instance&lt;/code&gt; 버튼을 클릭합니다
+  &lt;img src=&quot;/assets/images/2020/vpn/instance1.jpg&quot; alt=&quot;Insttance1&quot; /&gt;
+    &lt;ul&gt;
+      &lt;li&gt;ubuntu minimal을 고르고 public key를 업로드 합니다
+        &lt;ul&gt;
+          &lt;li&gt;ssh 키가 없다면 다음을 참고해 생성합니다 &lt;a href=&quot;https://docs.github.com/en/github/authenticating-to-github/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent&quot; target=&quot;_blank&quot;&gt;how to create ssh key&lt;/a&gt;&lt;/li&gt;
+        &lt;/ul&gt;
+      &lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;create 를 클릭하면 다음과 같이 상세를 확인 할 수 있습니다.
+  &lt;img src=&quot;/assets/images/2020/vpn/instance2.jpg&quot; alt=&quot;Insttance2&quot; width=&quot;80%&quot; /&gt;
+    &lt;ul&gt;
+      &lt;li&gt;public IP 를 메모해 둡니다&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;이제 생성이 완료되면 ssh를 통해 인스턴스로 접속 할 수 있습니다.&lt;/p&gt;
+
+&lt;h3 id=&quot;algo-vpn-설치&quot;&gt;Algo VPN 설치&lt;/h3&gt;
+
+&lt;p&gt;위에서 생성한 인스턴스에 접속하고 다음과 같이 VPN서버를 설치합니다&lt;/p&gt;
+
+&lt;h4 id=&quot;apt-패키지-설치&quot;&gt;Apt 패키지 설치&lt;/h4&gt;
+
+&lt;div class=&quot;language-sh highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;sudo &lt;/span&gt;apt update &lt;span class=&quot;o&quot;&gt;&amp;amp;&amp;amp;&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;sudo &lt;/span&gt;apt upgrade &lt;span class=&quot;nt&quot;&gt;-y&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;sudo &lt;/span&gt;apt &lt;span class=&quot;nb&quot;&gt;install&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-y&lt;/span&gt; python3-virtualenv unzip vim
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;원하는 에디터도 잊지않고 추가합니다. vim이 익숙치 않으시면 대신 nano를 사용하세요&lt;/p&gt;
+
+&lt;h4 id=&quot;algo-다운로드&quot;&gt;Algo 다운로드&lt;/h4&gt;
+
+&lt;div class=&quot;language-sh highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;wget https://github.com/trailofbits/algo/archive/master.zip
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;unzip master.zip
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h4 id=&quot;virtualenv-설정&quot;&gt;virtualenv 설정&lt;/h4&gt;
+
+&lt;div class=&quot;language-sh highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;cd &lt;/span&gt;algo-master
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;python3 &lt;span class=&quot;nt&quot;&gt;-m&lt;/span&gt; virtualenv &lt;span class=&quot;nt&quot;&gt;--python&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;$(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;command&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-v&lt;/span&gt; python3&lt;span class=&quot;si&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt; .env &lt;span class=&quot;o&quot;&gt;&amp;amp;&amp;amp;&lt;/span&gt;
+  &lt;span class=&quot;nb&quot;&gt;source&lt;/span&gt; .env/bin/activate &lt;span class=&quot;o&quot;&gt;&amp;amp;&amp;amp;&lt;/span&gt;
+  python3 &lt;span class=&quot;nt&quot;&gt;-m&lt;/span&gt; pip &lt;span class=&quot;nb&quot;&gt;install&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-U&lt;/span&gt; pip virtualenv &lt;span class=&quot;o&quot;&gt;&amp;amp;&amp;amp;&lt;/span&gt;
+  python3 &lt;span class=&quot;nt&quot;&gt;-m&lt;/span&gt; pip &lt;span class=&quot;nb&quot;&gt;install&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-r&lt;/span&gt; requirements.txt
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h4 id=&quot;사용자-추가&quot;&gt;사용자 추가&lt;/h4&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;config.cfg&lt;/code&gt; 를 편집하여 사용자를 추가합니다.&lt;/p&gt;
+
+&lt;div class=&quot;language-sh highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;vi config.cfg
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;사용자를 공유하는 것에는 가끔 문제가 있다고 하므로 다음과 같이 넉넉히 추가하는것을 추천합니다.&lt;/p&gt;
+
+&lt;div class=&quot;language-yml highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;na&quot;&gt;users&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+  &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;phone&lt;/span&gt;
+  &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;phone2&lt;/span&gt;
+  &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;tablet&lt;/span&gt;
+  &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;tablet2&lt;/span&gt;
+  &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;laptop&lt;/span&gt;
+  &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;laptop2&lt;/span&gt;
+  &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;desktop&lt;/span&gt;
+  &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;desktop2&lt;/span&gt;
+  &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;server&lt;/span&gt;
+  &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;server2&lt;/span&gt;
+  &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;guest&lt;/span&gt;
+  &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;guest2&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h4 id=&quot;배포스크립트-실행&quot;&gt;배포스크립트 실행&lt;/h4&gt;
+
+&lt;p&gt;다음은 대화형 스크립트 입니다.
+몇가지 선택사항에 대해 응답하고 나면 스크립트가 설치를 완료합니다.&lt;/p&gt;
+
+&lt;div class=&quot;language-sh highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;./algo
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;div class=&quot;language-sh highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;o&quot;&gt;[&lt;/span&gt;Cloud prompt]
+What provider would you like to use?
+&lt;span class=&quot;nt&quot;&gt;--&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; 11. Install to existing Ubuntu 18.04 or 20.04 server &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;for &lt;/span&gt;more advanced &lt;span class=&quot;nb&quot;&gt;users&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;첫 질문이 가장 중요합니다.
+현재 접속한 서버에 설치할 것 이므로 11번을 선택합니다.&lt;/p&gt;
+
+&lt;p&gt;나머지 대부분은 기본 설정으로 엔터만 눌러 진행하면 되지만 다음 두 질문들에는 답변을 따로 해 줍니다.&lt;/p&gt;
+
+&lt;div class=&quot;language-sh highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;o&quot;&gt;[&lt;/span&gt;Retain the PKI prompt]
+Do you want to retain the keys &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;PKI&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;? &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;required to add &lt;span class=&quot;nb&quot;&gt;users &lt;/span&gt;&lt;span class=&quot;k&quot;&gt;in &lt;/span&gt;the future, but less secure&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;[&lt;/span&gt;y/N]
+&lt;span class=&quot;nt&quot;&gt;--&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; Y
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;div class=&quot;language-sh highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;o&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;local&lt;/span&gt; : pause]
+Enter the public IP address or domain name of your server: &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;IMPORTANT! This is used to verify the certificate&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;[&lt;/span&gt;localhost]
+&lt;span class=&quot;nt&quot;&gt;---&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;[&lt;/span&gt;Put the public IP adress of your instance]
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;그러면 다음과 같이 출력이되고 설치가 완료 됩니다.&lt;/p&gt;
+
+&lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;s&quot;&gt;'#                       Congratulations!                         #'&lt;/span&gt;
+&lt;span class=&quot;s&quot;&gt;'#                  Your Algo server is running.                  #'&lt;/span&gt;
+&lt;span class=&quot;s&quot;&gt;'# Config files and certificates are in the ./configs/ directory. #'&lt;/span&gt;
+&lt;span class=&quot;s&quot;&gt;'#           Go to https://whoer.net/ after connecting            #'&lt;/span&gt;
+&lt;span class=&quot;s&quot;&gt;'#     and ensure that all your traffic passes through the VPN.   #'&lt;/span&gt;
+&lt;span class=&quot;s&quot;&gt;'#                  Local DNS resolver 172.29.**.**               #'&lt;/span&gt;
+&lt;span class=&quot;s&quot;&gt;'#     The p12 and SSH keys password for new users is *********   #'&lt;/span&gt;
+&lt;span class=&quot;s&quot;&gt;'#     The CA key password is ****************                    #'&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;뭔가 잘못되면 처음부터 다시 설치하는 것이 권장됩니다. 현재 인스턴스를 폐기하고 새로운 인스턴스를 재생성 합니다.&lt;/p&gt;
+
+&lt;h4 id=&quot;접속정보-복사&quot;&gt;접속정보 복사&lt;/h4&gt;
+
+&lt;p&gt;이제 VPN 서버의 ssh접속은 종료해도 됩니다.&lt;/p&gt;
+
+&lt;p&gt;지금 사용하는 로컬 환경에서 scp명령으로 접속정보를 복사합니다.
+아래의 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;vpnserver&lt;/code&gt;은 VPN서버의 공인 IP로 대체합니다.&lt;/p&gt;
+
+&lt;div class=&quot;language-sh highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;scp &lt;span class=&quot;nt&quot;&gt;-r&lt;/span&gt; ubuntu@vpnserver:algo-master/configs &lt;span class=&quot;nb&quot;&gt;.&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;이제 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;configs&lt;/code&gt; 디렉토리에 있는 접속정보를 사용 할 수 있습니다.&lt;/p&gt;
+
+&lt;h3 id=&quot;vpn-서버-포트-열기&quot;&gt;VPN 서버 포트 열기&lt;/h3&gt;
+
+&lt;p&gt;VPN 서버 자체는 준비가 되었지만 아직 한가지 스텝이 남아 있습니다.&lt;/p&gt;
+
+&lt;p&gt;VPN접속에 필요한 &lt;a href=&quot;https://github.com/trailofbits/algo/blob/master/docs/firewalls.md&quot; target=&quot;_blank&quot;&gt;포트들&lt;/a&gt;은 보통 닫혀있으므로 수동으로 열어줘야 합니다.&lt;/p&gt;
+
+&lt;h4 id=&quot;vpn-접속에-사용할-security-list-생성&quot;&gt;VPN 접속에 사용할 Security List 생성&lt;/h4&gt;
+
+&lt;p&gt;Oracle Cloud 웹 콘솔에 접속합니다.&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Networking &amp;gt; Virtual Cloud Networks 로 갑니다&lt;/li&gt;
+  &lt;li&gt;오른쪽의 VCN name을 클릭합니다&lt;/li&gt;
+  &lt;li&gt;왼쪽의 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Security Lists&lt;/code&gt;를 클릭합니다&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Create Security List&lt;/code&gt;를 클립합니다&lt;/li&gt;
+  &lt;li&gt;팝업창에 다음과 같이 입력합니다
+    &lt;ul&gt;
+      &lt;li&gt;Name: VPN&lt;/li&gt;
+      &lt;li&gt;Additional Ingress Rule: Ingress Rule 1
+        &lt;ul&gt;
+          &lt;li&gt;Source CIDR: 0.0.0.0/0&lt;/li&gt;
+          &lt;li&gt;Destination Port Range: 4160&lt;/li&gt;
+        &lt;/ul&gt;
+      &lt;/li&gt;
+      &lt;li&gt;Additional Ingress Rule: Ingress Rule 2
+        &lt;ul&gt;
+          &lt;li&gt;Source CIDR: 0.0.0.0/0&lt;/li&gt;
+          &lt;li&gt;IP Protocol: UDP&lt;/li&gt;
+          &lt;li&gt;Destination Port Range: 51820,500,4500&lt;/li&gt;
+        &lt;/ul&gt;
+      &lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Create Security List&lt;/code&gt;을 클릭하여 확정합니다&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/2020/vpn/vpn.ports.jpg&quot; alt=&quot;vpn ports&quot; /&gt;&lt;/p&gt;
+
+&lt;h4 id=&quot;security-list를-public-subnet에-연결하기&quot;&gt;Security List를 Public Subnet에 연결하기&lt;/h4&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Instace Details (Compute &amp;gt; Instaces &amp;gt; Instance Details)로 갑니다&lt;/li&gt;
+  &lt;li&gt;Primary VNIC의 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Subnet&lt;/code&gt;을 클릭합니다&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Add Security List&lt;/code&gt;을 클릭합니다&lt;/li&gt;
+  &lt;li&gt;팝업창에서 security list 풀다운에 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;VPN&lt;/code&gt;을 선택합니다&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Add Security List&lt;/code&gt;를 클릭하여 확정합니다&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h3 id=&quot;client-설정하기&quot;&gt;Client 설정하기&lt;/h3&gt;
+
+&lt;p&gt;일단 iPad를 기준으로 설정방법에 대해 설명하겠습니다&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Appstore에서 WireGuard 를 설치합니다 (iOS12 또는 상위버전이 필요합니다)&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;configs/localhost/wireguard/tablet.png&lt;/code&gt;와 같이 사용자에 맞는 PNG QR 코드를 엽니다
+  &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;configs&lt;/code&gt; 디렉토리는 이전단계에서 복사해 둔 것입니다&lt;/li&gt;
+  &lt;li&gt;WireGuard 를 실행해 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;+&lt;/code&gt; 버튼을 터치하고 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Create from QR code&lt;/code&gt;를 선택합니다&lt;/li&gt;
+  &lt;li&gt;QR code를 찍어서 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;tablet&lt;/code&gt;과 같이 이름을 붙입니다.&lt;/li&gt;
+  &lt;li&gt;생성된 해당 연결을 켭니다&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;이것으로 VPN에 연결되었습니다&lt;/p&gt;
+
+&lt;p&gt;브라우저를 열어 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;my ip&lt;/code&gt;를 검색하면 VPN server의 주소가 표시될 것입니다&lt;/p&gt;
+
+&lt;p&gt;WireGuard 앱은 Mac and Windows10 에서도 사용 가능하므로 비슷한 방법으로 설정 가능 합니다.&lt;/p&gt;
+
+&lt;h3 id=&quot;문제해결&quot;&gt;문제해결&lt;/h3&gt;
+
+&lt;p&gt;서버에 연결할 수 없어도 WireGuard 앱은 조용히 실패하고 인터넷이 불통이 됩니다
+인터넷 연결에 문제가 있으면 VPN 커넥션을 종료하고 서버 문제를 해결한 다음에 다시 시도 하세요&lt;/p&gt;
+
+&lt;h3 id=&quot;더-읽어보기&quot;&gt;더 읽어보기&lt;/h3&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href=&quot;https://github.com/trailofbits/algo#deploy-the-algo-server&quot; target=&quot;_blank&quot;&gt;Algo VPN&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+</description>
+        <pubDate>Sat, 01 Aug 2020 10:41:01 +0000</pubDate>
+        <link>https://kenny.yeoyou.net/ko/it/2020/08/01/set-up-algo-vpn-in-oracle-cloud.html</link>
+        <guid isPermaLink="true">https://kenny.yeoyou.net/ko/it/2020/08/01/set-up-algo-vpn-in-oracle-cloud.html</guid>
+        
+        
+        <category>IT</category>
+        
+      </item>
+    
+  </channel>
+</rss>
